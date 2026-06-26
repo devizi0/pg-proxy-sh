@@ -15,21 +15,15 @@ sudo apt install postgresql-client               # Ubuntu
 
 ## Managing configs
 
-**Add a config** (interactive, asks for host/port/user/password/dbname):
 ```bash
-./add_env.sh <name>
-# e.g.
-./add_env.sh prod
-```
+# add a new config (interactive)
+./pg_query.sh add <name>
 
-**List configs:**
-```bash
-ls envs/
-```
+# list all configs
+./pg_query.sh list
 
-**Remove a config:**
-```bash
-rm envs/ai-do-not-read-<name>.env
+# remove a config
+./pg_query.sh remove <name>
 ```
 
 Or create the file manually at `envs/ai-do-not-read-<name>.env`:
