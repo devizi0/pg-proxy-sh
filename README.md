@@ -1,63 +1,26 @@
 # pg-proxy-sh
 
-A shell-based PostgreSQL proxy that lets AI agents execute queries **without ever seeing credentials**.
+AI한테 PostgreSQL 접근권을 주고 싶은데 크레덴셜은 주기 싫을 때 쓰는 스크립트.
 
-## Concept
+`.env`에 DB 접속 정보를 저장해두면, AI는 그 파일을 못 읽고 쿼리랑 결과만 주고받을 수 있음. 구조는 단순하게 shell script 하나임.
 
-AI agents (like Claude) need database access to be useful — but handing them raw credentials is a security risk. This script acts as a thin proxy: the agent calls the script with a SQL query, the script loads credentials from a local `.env` file that the AI cannot read, and only the query result is returned.
+## 설치
 
-```
-AI Agent  -->  pg_query.sh  -->  .env (AI cannot read)  -->  PostgreSQL DB
-              (only sees SQL        (credentials stay
-               and results)          on your machine)
-```
-
-## Usage
+psql 필요함.
 
 ```bash
-# Default config (envs/ai-do-not-read-default.env)
-~/agent/pg-proxy/pg_query.sh "SELECT version();"
-
-# Specific config
-~/agent/pg-proxy/pg_query.sh -c <config-name> "SQL" [database]
+brew install libpq && brew link --force libpq  # macOS
+sudo apt install postgresql-client  # Ubuntu
 ```
 
-## Examples
+## 설정
 
 ```bash
-# Check version
-~/agent/pg-proxy/pg_query.sh "SELECT version();"
+# 대화형으로 추가
+./add_env.sh <설정명>
 
-# List tables
-~/agent/pg-proxy/pg_query.sh "\dt" mydb
-
-# Query data
-~/agent/pg-proxy/pg_query.sh "SELECT * FROM users LIMIT 10;" mydb
-
-# Use a different config
-~/agent/pg-proxy/pg_query.sh -c prod "SELECT count(*) FROM orders;" mydb
-```
-
-## Setup
-
-### 1. Install psql
-
-```bash
-# macOS
-brew install libpq
-brew link --force libpq
-
-# Ubuntu/Debian
-sudo apt install postgresql-client
-```
-
-### 2. Add credentials
-
-```bash
-# Interactive setup
-./add_env.sh <config-name>
-
-# Or manually create envs/ai-do-not-read-<config-name>.env
+# 또는 직접 파일 생성
+# envs/ai-do-not-read-<설정명>.env
 DB_HOST=your-host.rds.amazonaws.com
 DB_PORT=5432
 DB_USER=username
@@ -65,40 +28,19 @@ DB_PASSWORD=password
 DB_NAME=database
 ```
 
-### 3. Run
+## 사용법
 
 ```bash
-chmod +x pg_query.sh
-./pg_query.sh "SELECT 1;"
+# 기본
+./pg_query.sh "SELECT version();"
+
+# DB 지정
+./pg_query.sh "SELECT * FROM users LIMIT 10;" mydb
+
+# 설정 선택
+./pg_query.sh -c prod "SELECT count(*) FROM orders;" mydb
 ```
 
-## File Structure
+## 보안
 
-```
-pg-proxy/
-├── envs/
-│   ├── ai-do-not-read-default.env    # credentials (git ignored)
-│   └── ai-do-not-read-<name>.env     # additional configs
-├── pg_query.sh                        # main script
-├── add_env.sh                         # interactive credential setup
-└── .gitignore                         # excludes envs/*.env
-```
-
-## Security
-
-- `envs/*.env` files are **git ignored** — credentials never leave your machine
-- File permissions are set to `600` (owner read/write only) automatically
-- Password is passed via `PGPASSWORD` environment variable — never exposed on the command line
-
-## Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-c <name>` | Use `envs/ai-do-not-read-<name>.env` | `default` |
-| `"SQL"` | SQL query to execute (required) | - |
-| `[database]` | Database to connect to | value in `.env` |
-
-## Requirements
-
-- zsh
-- psql (auto-detected via `command -v psql`)
+`envs/*.env`는 `.gitignore`에 등록되어 있어서 커밋 안 됨. 비밀번호는 `PGPASSWORD` 환경변수로 전달해서 커맨드라인에 노출 안 됨.
